@@ -32,7 +32,7 @@ task 'build/scripts', '', [], (done) ->
   execute "#{tscPath} -p ./.scripts/", (code, stdout, stderr) ->
     done()
 
-task 'build/generator','dotnet',['restore', 'version-number'], (done) ->
+task 'build/generator','dotnet',['version-number'], (done) ->
   execute "dotnet build -c #{configuration} #{solution} /nologo /clp:NoSummary /p:VersionPrefix=#{version}", (code, stdout, stderr) ->
     execute "dotnet publish -c #{configuration} #{sourceFolder} --output #{sourceFolder}/bin/netcoreapp2.0 /nologo /clp:NoSummary /p:VersionPrefix=#{version}", (code, stdout, stderr) ->
       done()
@@ -46,22 +46,6 @@ task 'clear-cache-on-force', '', (done)->
       done()
   else 
     done()
-
-task 'restore','restores the dotnet packages for the projects',['clear-cache-on-force'], (done) -> 
-  
-  if ! test '-d', "#{os.homedir()}/.nuget"
-    global.force = true
-
-  projects()
-    .pipe where (each) ->  # check for project.assets.json files are up to date  
-      rm "#{folder each.path}/obj/project.assets.json" if (force and test '-f', "#{folder each.path}/obj/project.assets.json")
-      return true if force
-      assets = "#{folder each.path}/obj/project.assets.json"
-      return false if (exists assets) and (newer assets, each.path)
-      return true
-    .pipe foreach (each,done)->
-      execute "dotnet restore #{ each.path } /nologo", {retry:1},(code,stderr,stdout) ->
-        done()
         
 # the dotnet gulp-plugin.
 module.exports = dotnet
