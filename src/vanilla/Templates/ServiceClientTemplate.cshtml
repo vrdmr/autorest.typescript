@@ -1,10 +1,7 @@
 ﻿@using System.Linq
 @using AutoRest.TypeScript
 @inherits AutoRest.Core.Template<AutoRest.TypeScript.Model.CodeModelTS>
-/*
-@Header(" * ")
- */
-@EmptyLine
+@(Model.GenerateServiceClient(EmptyLine))
 @(Model.GenerateServiceClientImports())
 @EmptyLine
 class @(Model.Name) extends @(Model.ContextName) {

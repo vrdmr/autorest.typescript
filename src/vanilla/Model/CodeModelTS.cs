@@ -1187,5 +1187,14 @@ namespace AutoRest.TypeScript.Model
             });
             return builder.ToString();
         }
+
+        public virtual string GenerateServiceClient(string emptyLine)
+        {
+            TSBuilder builder = new TSBuilder();
+            builder.Comment(AutoRest.Core.Settings.Instance.Header);
+            builder.Line(emptyLine);
+
+            return builder.ToString();
+        }
     }
 }
