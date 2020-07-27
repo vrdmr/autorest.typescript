@@ -8,3 +8,5 @@ test/**/node_modules
 test-browser
 .tmp
 coverage
+*/obj
+*/bin
