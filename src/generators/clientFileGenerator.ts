@@ -58,36 +58,41 @@ export function generateClient(clientDetails: ClientDetails, project: Project) {
     }
   );
 
-  (hasCredentials || hasInlineOperations || !hasClientOptionalParams) &&
-    clientFile.addImportDeclaration({
-      namespaceImport: "coreHttp",
-      moduleSpecifier: "@azure/core-http"
-    });
+  clientFile.addImportDeclaration({
+    namespaceImport: "AzureFunction",
+    moduleSpecifier: "@azure/functions"
+  });
+
+  // (hasCredentials || hasInlineOperations || !hasClientOptionalParams) &&
+  //   clientFile.addImportDeclaration({
+  //     namespaceImport: "coreHttp",
+  //     moduleSpecifier: "@azure/core-http"
+  //   });
 
   const hasLRO = clientDetails.operationGroups.some(og =>
     og.operations.some(o => o.isLRO)
   );
 
-  if (hasInlineOperations && hasLRO) {
-    clientFile.addImportDeclaration({
-      namedImports: ["LROPoller", "shouldDeserializeLRO"],
-      moduleSpecifier: "./lro"
-    });
-  }
+  // if (hasInlineOperations && hasLRO) {
+  //   clientFile.addImportDeclaration({
+  //     namedImports: ["LROPoller", "shouldDeserializeLRO"],
+  //     moduleSpecifier: "./lro"
+  //   });
+  // }
 
-  if (hasImportedOperations) {
-    clientFile.addImportDeclaration({
-      namespaceImport: "operations",
-      moduleSpecifier: "./operations"
-    });
-  }
+  // if (hasImportedOperations) {
+  //   clientFile.addImportDeclaration({
+  //     namespaceImport: "operations",
+  //     moduleSpecifier: "./operations"
+  //   });
+  // }
 
-  if (hasInlineOperations && shouldImportParameters(clientDetails)) {
-    clientFile.addImportDeclaration({
-      namespaceImport: "Parameters",
-      moduleSpecifier: "./models/parameters"
-    });
-  }
+  // if (hasInlineOperations && shouldImportParameters(clientDetails)) {
+  //   clientFile.addImportDeclaration({
+  //     namespaceImport: "Parameters",
+  //     moduleSpecifier: "./models/parameters"
+  //   });
+  // }
 
   clientFile.addImportDeclaration({
     namespaceImport: "Models",
@@ -95,17 +100,17 @@ export function generateClient(clientDetails: ClientDetails, project: Project) {
   });
 
   // Only import mappers if there are any
-  if (hasMappers) {
-    clientFile.addImportDeclaration({
-      namespaceImport: "Mappers",
-      moduleSpecifier: "./models/mappers"
-    });
-  }
+  // if (hasMappers) {
+  //   clientFile.addImportDeclaration({
+  //     namespaceImport: "Mappers",
+  //     moduleSpecifier: "./models/mappers"
+  //   });
+  // }
 
-  clientFile.addImportDeclaration({
-    namedImports: [clientContextClassName],
-    moduleSpecifier: `./${clientDetails.sourceFileName}Context`
-  });
+  // clientFile.addImportDeclaration({
+  //   namedImports: [clientContextClassName],
+  //   moduleSpecifier: `./${clientDetails.sourceFileName}Context`
+  // });
 
   const clientClass = clientFile.addClass({
     name: clientDetails.className,
@@ -114,33 +119,40 @@ export function generateClient(clientDetails: ClientDetails, project: Project) {
 
   const importedModels = new Set<string>();
 
-  writeConstructor(clientDetails, clientClass, importedModels);
+  // writeConstructor(clientDetails, clientClass, importedModels);
   writeClientOperations(
     clientFile,
     clientClass,
     clientDetails,
     hasLRO,
-    importedModels
+    importedModels,
+    project
   );
 
   // Use named import from Models
-  if (importedModels.size) {
-    clientFile.addImportDeclaration({
-      namedImports: [...importedModels],
-      moduleSpecifier: "./models"
-    });
-  }
+  // if (importedModels.size) {
+  //   clientFile.addImportDeclaration({
+  //     namedImports: [...importedModels],
+  //     moduleSpecifier: "./models"
+  //   });
+  // }
 
-  clientFile.addExportDeclaration({
-    leadingTrivia: (writer: CodeBlockWriter) =>
-      writer.write("// Operation Specifications\n\n"),
-    namedExports: [
-      { name: clientDetails.className },
-      { name: clientContextClassName },
-      { name: "Models", alias: modelsName },
-      ...(hasMappers ? [{ name: "Mappers", alias: mappersName }] : [])
-    ]
-  });
+  // clientFile.addExportDeclaration({
+  //   namedExports: [
+  //     { name: clientDetails.className }
+  //   ]
+  // });
+
+  // clientFile.addExportDeclaration({
+  //   leadingTrivia: (writer: CodeBlockWriter) =>
+  //     writer.write("// Operation Specifications\n\n"),
+  //   namedExports: [
+  //     { name: clientDetails.className },
+  //     { name: clientContextClassName },
+  //     { name: "Models", alias: modelsName },
+  //     ...(hasMappers ? [{ name: "Mappers", alias: mappersName }] : [])
+  //   ]
+  // });
 
   clientDetails.operationGroups.some(og => !og.isTopLevel) &&
     clientFile.addExportDeclaration({
@@ -238,7 +250,8 @@ function writeClientOperations(
   classDeclaration: ClassDeclaration,
   clientDetails: ClientDetails,
   hasLRO: boolean,
-  importedModels: Set<string>
+  importedModels: Set<string>,
+  project: Project
 ) {
   const allModelsNames = getAllModelsNames(clientDetails);
   const topLevelGroup = clientDetails.operationGroups.find(og => og.isTopLevel);
@@ -263,6 +276,38 @@ function writeClientOperations(
       clientDetails.parameters,
       hasMappers
     );
+
+    topLevelGroup.operations.forEach(operation => {
+      const azureSourceFileText = `
+      import { AzureFunction, Context, HttpRequest } from "@azure/functions";
+
+      const ${operation.name}: AzureFunction = async function (context: Context, req: HttpRequest): Promise<void> {
+        context.log('HTTP trigger function processed a request.');
+        const name = (req.query.name || (req.body && req.body.name));
+        if (name) {
+          context.res = {
+              // status: 200, /* Defaults to 200 */
+              body: "Hello " + (req.query.name || req.body.name)
+          };
+        }
+        else {
+          context.res = {
+              status: 400,
+              body: "Please pass a name on the query string or in the request body"
+          };
+        }
+      };
+
+      export default ${operation.name};
+      `
+      const x = project.createSourceFile(
+        `${clientDetails.srcPath}/${operation.name}/index.ts`,
+        azureSourceFileText,
+        { overwrite: true }
+      )
+      x.save();
+    });
+
   }
 
   const operationsDeclarationDetails = getOperationGroupsDeclarationDetails(

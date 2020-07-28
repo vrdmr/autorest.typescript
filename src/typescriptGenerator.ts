@@ -26,10 +26,10 @@ const prettierTypeScriptOptions: prettier.Options = {
   arrowParens: "always",
   bracketSpacing: true,
   endOfLine: "lf",
-  printWidth: 80,
+  printWidth: 120,
   semi: true,
   singleQuote: false,
-  tabWidth: 2
+  tabWidth: 4
 };
 
 const prettierJSONOptions: prettier.Options = {
@@ -72,20 +72,20 @@ export async function generateTypeScriptLibrary(
 
   // Skip metadata generation if `generate-metadata` is explicitly false
   if ((await host.GetValue("generate-metadata")) !== false) {
-    generatePackageJson(clientDetails, packageDetails, project);
-    generateLicenseFile(project, shouldGenerateLicense);
-    generateReadmeFile(clientDetails, packageDetails, project);
-    generateTsConfig(project);
-    generateRollupConfig(clientDetails, packageDetails, project);
+    // generatePackageJson(clientDetails, packageDetails, project);
+    // generateLicenseFile(project, shouldGenerateLicense);
+    // generateReadmeFile(clientDetails, packageDetails, project);
+    // generateTsConfig(project);
+    // generateRollupConfig(clientDetails, packageDetails, project);
   }
 
   generateClient(clientDetails, project);
-  generateClientContext(clientDetails, packageDetails, project);
+  // generateClientContext(clientDetails, packageDetails, project);
   generateModels(clientDetails, project);
   generateMappers(clientDetails, project);
-  generateOperations(clientDetails, project);
+  // generateOperations(clientDetails, project);
   generateParameters(clientDetails, project);
-  await generateLROFiles(clientDetails, project);
+  // await generateLROFiles(clientDetails, project);
 
   const licenseHeader = `
 /*
